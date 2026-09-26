@@ -36,14 +36,14 @@ final class EditorViewController: NSWindowController, NSTextViewDelegate {
         content.layer?.backgroundColor = paper.cgColor
 
         let toolbar = NSVisualEffectView()
-        toolbar.material = .underWindowBackground
+        toolbar.material = .light
         toolbar.blendingMode = .withinWindow
         toolbar.state = .active
         toolbar.translatesAutoresizingMaskIntoConstraints = false
         content.addSubview(toolbar)
 
         titleField.translatesAutoresizingMaskIntoConstraints = false
-        titleField.font = NSFont(name: "Courier", size: 25) ?? NSFont.monospacedSystemFont(ofSize: 25, weight: .regular)
+        titleField.font = writingFont(size: 25)
         titleField.alignment = .center
         titleField.placeholderString = "Titre"
         titleField.isBordered = false
@@ -119,7 +119,9 @@ final class EditorViewController: NSWindowController, NSTextViewDelegate {
     }
 
     private func writingFont(size: CGFloat) -> NSFont {
-        return NSFont(name: "Courier", size: size) ?? NSFont.monospacedSystemFont(ofSize: size, weight: .regular)
+        return NSFont(name: "Courier", size: size)
+            ?? NSFont(name: "Menlo", size: size)
+            ?? NSFont.systemFont(ofSize: size)
     }
 
     private func defaultAttributes(size: CGFloat) -> [NSAttributedStringKey: Any] {
@@ -175,9 +177,35 @@ final class EditorViewController: NSWindowController, NSTextViewDelegate {
         editor.textStorage?.addAttribute(.foregroundColor, value: ink, range: NSRange(location: 0, length: editor.string.utf16.count))
     }
 
-    @objc func toggleBold(_ sender: Any?) { editor.toggleBoldface(sender) }
-    @objc func toggleItalic(_ sender: Any?) { editor.toggleItalics(sender) }
-    @objc func toggleUnderline(_ sender: Any?) { editor.toggleUnderline(sender) }
+    @objc func toggleBold(_ sender: Any?) { toggleFontTrait(.boldFontMask) }
+    @objc func toggleItalic(_ sender: Any?) { toggleFontTrait(.italicFontMask) }
+
+    private func toggleFontTrait(_ trait: NSFontTraitMask) {
+        let range = editor.selectedRange()
+        let sourceFont: NSFont
+        if range.length > 0, let selected = editor.textStorage?.attribute(.font, at: range.location, effectiveRange: nil) as? NSFont {
+            sourceFont = selected
+        } else {
+            sourceFont = (editor.typingAttributes[.font] as? NSFont) ?? writingFont(size: baseFontSize)
+        }
+        let manager = NSFontManager.shared
+        let result = manager.traits(of: sourceFont).contains(trait)
+            ? manager.convert(sourceFont, toNotHaveTrait: trait)
+            : manager.convert(sourceFont, toHaveTrait: trait)
+        if range.length > 0 { editor.setFont(result, range: range) }
+        editor.typingAttributes[.font] = result
+    }
+
+    @objc func toggleUnderline(_ sender: Any?) {
+        let range = editor.selectedRange()
+        let style = NSUnderlineStyle.styleSingle.rawValue
+        let current = range.length > 0
+            ? (editor.textStorage?.attribute(.underlineStyle, at: range.location, effectiveRange: nil) as? Int ?? 0)
+            : (editor.typingAttributes[.underlineStyle] as? Int ?? 0)
+        let next = current == style ? 0 : style
+        if range.length > 0 { editor.textStorage?.addAttribute(.underlineStyle, value: next, range: range) }
+        editor.typingAttributes[.underlineStyle] = next
+    }
     @objc func increaseFontSize(_ sender: Any?) { changeFontSize(by: 1) }
     @objc func decreaseFontSize(_ sender: Any?) { changeFontSize(by: -1) }
 
@@ -216,7 +244,7 @@ final class EditorViewController: NSWindowController, NSTextViewDelegate {
                 titleField.stringValue = url.deletingPathExtension().lastPathComponent
                 window?.title = titleField.stringValue
                 updateFocus()
-            } catch { present(error: error) }
+            } catch { showError(error) }
         }
     }
 
@@ -234,6 +262,10 @@ final class EditorViewController: NSWindowController, NSTextViewDelegate {
             let data = try editor.textStorage?.data(from: range, documentAttributes: [.documentType: NSAttributedString.DocumentType.rtf]) ?? Data()
             try data.write(to: url, options: .atomic)
             window?.title = titleField.stringValue.isEmpty ? url.deletingPathExtension().lastPathComponent : titleField.stringValue
-        } catch { present(error: error) }
+        } catch { showError(error) }
+    }
+
+    private func showError(_ error: Error) {
+        NSAlert(error: error).runModal()
     }
 }

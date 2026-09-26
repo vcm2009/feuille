@@ -31,6 +31,14 @@ class FeuilleContractTests(unittest.TestCase):
         self.assertIn("focusParagraph", source)
         self.assertIn(".foregroundColor", source)
 
+    def test_high_sierra_compatibility_uses_supported_appkit_apis(self):
+        source = SOURCE.read_text()
+        self.assertIn("toolbar.material = .light", source)
+        self.assertNotIn("monospacedSystemFont", source)
+        self.assertIn("func toggleFontTrait", source)
+        self.assertIn("func toggleUnderline", source)
+        self.assertIn("func showError", source)
+
     def test_project_targets_macos_high_sierra(self):
         project = PROJECT.read_text()
         self.assertIn("MACOSX_DEPLOYMENT_TARGET = 10.13", project)
