@@ -41,6 +41,9 @@ class FeuilleContractTests(unittest.TestCase):
         self.assertIn("setControlsVisible(false)", source)
         self.assertIn("func mouseMoved", source)
         self.assertNotIn("focusButton", source)
+        self.assertIn("editor.isVerticallyResizable = true", source)
+        self.assertIn("editor.textContainer?.heightTracksTextView = false", source)
+        self.assertIn("editor.textContainer?.containerSize = NSSize(width: 0, height: CGFloat.greatestFiniteMagnitude)", source)
 
     def test_notes_home_and_local_note_store_exist(self):
         source = SOURCE.read_text()

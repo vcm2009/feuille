@@ -141,14 +141,18 @@ final class EditorViewController: NSWindowController, NSTextViewDelegate, NSText
         scrollView.hasVerticalScroller = true
         scrollView.drawsBackground = false
         content.addSubview(scrollView)
-        editor.translatesAutoresizingMaskIntoConstraints = false
+        editor.translatesAutoresizingMaskIntoConstraints = true
         editor.delegate = self
         editor.isRichText = true
         editor.allowsUndo = true
         editor.usesFontPanel = false
         editor.usesRuler = false
         editor.isHorizontallyResizable = false
+        editor.isVerticallyResizable = true
+        editor.autoresizingMask = [.width]
+        editor.textContainer?.containerSize = NSSize(width: 0, height: CGFloat.greatestFiniteMagnitude)
         editor.textContainer?.widthTracksTextView = true
+        editor.textContainer?.heightTracksTextView = false
         editor.textContainerInset = NSSize(width: 112, height: 36)
         editor.backgroundColor = paper
         editor.insertionPointColor = ink
@@ -176,7 +180,6 @@ final class EditorViewController: NSWindowController, NSTextViewDelegate, NSText
             scrollView.leadingAnchor.constraint(equalTo: content.leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: content.trailingAnchor),
             scrollView.bottomAnchor.constraint(equalTo: content.bottomAnchor),
-            editor.widthAnchor.constraint(equalTo: scrollView.contentView.widthAnchor),
             header.leadingAnchor.constraint(equalTo: content.leadingAnchor),
             header.trailingAnchor.constraint(equalTo: content.trailingAnchor),
             header.topAnchor.constraint(equalTo: content.topAnchor),
