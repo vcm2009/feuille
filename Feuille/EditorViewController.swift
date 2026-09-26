@@ -388,18 +388,6 @@ final class EditorViewController: NSWindowController, NSTextViewDelegate, NSText
 
     @objc func saveDocument(_ sender: Any?) {
         saveCurrentNote()
-        if currentURL == nil {
-            let panel = NSSavePanel()
-            panel.allowedFileTypes = ["rtf"]
-            panel.nameFieldStringValue = (titleField.stringValue.isEmpty ? "Sans titre" : titleField.stringValue) + ".rtf"
-            guard panel.runModal() == .OK, let url = panel.url else { return }
-            currentURL = url
-        }
-        guard let url = currentURL else { return }
-        do {
-            let data = try editor.textStorage?.data(from: NSRange(location: 0, length: editor.textStorage?.length ?? 0), documentAttributes: [.documentType: NSAttributedString.DocumentType.rtf]) ?? Data()
-            try data.write(to: url, options: .atomic)
-        } catch { showError(error) }
     }
 
     private func showError(_ error: Error) { NSAlert(error: error).runModal() }

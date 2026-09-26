@@ -47,6 +47,15 @@ class FeuilleContractTests(unittest.TestCase):
         self.assertIn("editor.textContainer?.heightTracksTextView = false", source)
         self.assertIn("editor.textContainer?.containerSize = NSSize(width: 0, height: CGFloat.greatestFiniteMagnitude)", source)
 
+    def test_command_save_keeps_notes_inside_the_app(self):
+        source = SOURCE.read_text()
+        start = source.index("@objc func saveDocument")
+        end = source.index("    private func showError", start)
+        save_method = source[start:end]
+        self.assertIn("saveCurrentNote()", save_method)
+        self.assertNotIn("NSSavePanel", save_method)
+        self.assertNotIn("data.write(to:", save_method)
+
     def test_notes_home_and_local_note_store_exist(self):
         source = SOURCE.read_text()
         store = STORE.read_text()
