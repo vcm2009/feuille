@@ -45,6 +45,12 @@ class FeuilleContractTests(unittest.TestCase):
         self.assertIn("SDKROOT = macosx", project)
         self.assertIn("SWIFT_VERSION = 4.0", project)
 
+    def test_app_explicitly_centers_activates_and_presents_editor_window(self):
+        app = APP.read_text()
+        self.assertIn("controller.window?.center()", app)
+        self.assertIn("controller.window?.makeKeyAndOrderFront(nil)", app)
+        self.assertIn("NSApp.activate(ignoringOtherApps: true)", app)
+
     def test_app_declares_a_document_type(self):
         app = APP.read_text()
         self.assertIn("NSDocumentController", app)
