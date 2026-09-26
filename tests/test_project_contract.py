@@ -7,6 +7,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "Feuille" / "EditorViewController.swift"
 APP = ROOT / "Feuille" / "AppDelegate.swift"
 MAIN = ROOT / "Feuille" / "main.swift"
+STORE = ROOT / "Feuille" / "NoteStore.swift"
 PROJECT = ROOT / "Feuille.xcodeproj" / "project.pbxproj"
 
 
@@ -28,13 +29,27 @@ class FeuilleContractTests(unittest.TestCase):
     def test_editor_uses_native_rich_text_and_preserves_focused_paragraph(self):
         source = SOURCE.read_text()
         self.assertIn("NSTextView", source)
-        self.assertIn("NSTextStorage", source)
+        self.assertIn("editor.textStorage", source)
         self.assertIn("focusParagraph", source)
         self.assertIn(".foregroundColor", source)
 
+    def test_notes_home_and_local_note_store_exist(self):
+        source = SOURCE.read_text()
+        store = STORE.read_text()
+        self.assertIn("func showHome(_ sender", source)
+        self.assertIn("NotesHomeView", source)
+        self.assertIn("func saveCurrentNote()", source)
+        self.assertIn("override func controlTextDidChange", source)
+        self.assertIn("class NoteStore", store)
+        self.assertIn(".applicationSupportDirectory", store)
+        self.assertIn("func save", store)
+        self.assertIn("func load", store)
+        self.assertIn("NoteStore.swift in Sources", PROJECT.read_text())
+
     def test_high_sierra_compatibility_uses_supported_appkit_apis(self):
         source = SOURCE.read_text()
-        self.assertIn("toolbar.material = .light", source)
+        self.assertIn("header.layer?.backgroundColor = paper.cgColor", source)
+        self.assertNotIn("NSVisualEffectView", source)
         self.assertNotIn("monospacedSystemFont", source)
         self.assertIn("func toggleFontTrait", source)
         self.assertIn("func toggleUnderline", source)

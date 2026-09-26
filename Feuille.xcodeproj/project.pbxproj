@@ -9,6 +9,7 @@
 		A10000000000000000000011 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000001 /* AppDelegate.swift */; };
 		A10000000000000000000012 /* EditorViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000002 /* EditorViewController.swift */; };
 		A10000000000000000000013 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000005 /* main.swift */; };
+		A10000000000000000000014 /* NoteStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000006 /* NoteStore.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -17,6 +18,7 @@
 		A10000000000000000000003 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A10000000000000000000004 /* Feuille.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Feuille.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A10000000000000000000005 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		A10000000000000000000006 /* NoteStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteStore.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -25,7 +27,7 @@
 
 /* Begin PBXGroup section */
 		A10000000000000000000030 = {isa = PBXGroup; children = (A10000000000000000000031 /* Feuille */, A10000000000000000000032 /* Products */); sourceTree = "<group>"; };
-		A10000000000000000000031 /* Feuille */ = {isa = PBXGroup; children = (A10000000000000000000005 /* main.swift */, A10000000000000000000001 /* AppDelegate.swift */, A10000000000000000000002 /* EditorViewController.swift */, A10000000000000000000003 /* Info.plist */); path = Feuille; sourceTree = "<group>"; };
+		A10000000000000000000031 /* Feuille */ = {isa = PBXGroup; children = (A10000000000000000000005 /* main.swift */, A10000000000000000000001 /* AppDelegate.swift */, A10000000000000000000002 /* EditorViewController.swift */, A10000000000000000000006 /* NoteStore.swift */, A10000000000000000000003 /* Info.plist */); path = Feuille; sourceTree = "<group>"; };
 		A10000000000000000000032 /* Products */ = {isa = PBXGroup; children = (A10000000000000000000004 /* Feuille.app */); name = Products; sourceTree = "<group>"; };
 /* End PBXGroup section */
 
@@ -42,7 +44,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		A10000000000000000000042 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000013 /* main.swift in Sources */, A10000000000000000000011 /* AppDelegate.swift in Sources */, A10000000000000000000012 /* EditorViewController.swift in Sources */); runOnlyForDeploymentPostprocessing = 0; };
+		A10000000000000000000042 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000013 /* main.swift in Sources */, A10000000000000000000011 /* AppDelegate.swift in Sources */, A10000000000000000000012 /* EditorViewController.swift in Sources */, A10000000000000000000014 /* NoteStore.swift in Sources */); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
