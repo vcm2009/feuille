@@ -363,10 +363,12 @@ final class EditorViewController: NSWindowController, NSTextViewDelegate, NSText
     }
 
     func saveCurrentNote() {
-        guard var note = currentNote, !homeView.isHidden else { return }
+        guard var note = currentNote else { return }
         note.title = titleField.stringValue
-        do { currentNote = try noteStore.save(note, content: editor.attributedString()) }
-        catch { return }
+        do {
+            currentNote = try noteStore.save(note, content: editor.attributedString())
+            homeView.display(noteStore.all())
+        } catch { return }
     }
 
     @objc func openDocument(_ sender: Any?) {

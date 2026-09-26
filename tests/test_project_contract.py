@@ -56,6 +56,15 @@ class FeuilleContractTests(unittest.TestCase):
         self.assertNotIn("NSSavePanel", save_method)
         self.assertNotIn("data.write(to:", save_method)
 
+    def test_autosave_refreshes_the_notes_home(self):
+        source = SOURCE.read_text()
+        start = source.index("func saveCurrentNote()")
+        end = source.index("    @objc func openDocument", start)
+        autosave = source[start:end]
+        self.assertIn("try noteStore.save", autosave)
+        self.assertIn("homeView.display(noteStore.all())", autosave)
+        self.assertIn("saveCurrentNote()", source[source.index("func textDidChange"):source.index("func updateFocus")])
+
     def test_notes_home_and_local_note_store_exist(self):
         source = SOURCE.read_text()
         store = STORE.read_text()
