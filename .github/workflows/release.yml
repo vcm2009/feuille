@@ -1,0 +1,52 @@
+name: Build and release Feuille
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-13
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build unsigned macOS application
+        run: |
+          xcodebuild \
+            -project Feuille.xcodeproj \
+            -scheme Feuille \
+            -configuration Release \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Package application
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent \
+            build/Build/Products/Release/Feuille.app \
+            Feuille-macOS.zip
+          shasum -a 256 Feuille-macOS.zip | tee Feuille-macOS.zip.sha256
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Feuille-macOS
+          path: |
+            Feuille-macOS.zip
+            Feuille-macOS.zip.sha256
+          if-no-files-found: error
+
+      - name: Publish GitHub release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            Feuille-macOS.zip
+            Feuille-macOS.zip.sha256
