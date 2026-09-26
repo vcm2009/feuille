@@ -37,6 +37,8 @@ class FeuilleContractTests(unittest.TestCase):
         source = SOURCE.read_text()
         self.assertIn("scrollView.topAnchor.constraint(equalTo: header.bottomAnchor)", source)
         self.assertIn("titleField.alignment = .left", source)
+        self.assertIn("titleField.widthAnchor.constraint(equalTo: header.widthAnchor, multiplier: 0.48)", source)
+        self.assertIn("titleField.heightAnchor.constraint(equalToConstant: 34)", source)
         self.assertIn("HeaderView", source)
         self.assertIn("setControlsVisible(false)", source)
         self.assertIn("func mouseMoved", source)

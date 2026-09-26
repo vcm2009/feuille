@@ -220,7 +220,8 @@ final class EditorViewController: NSWindowController, NSTextViewDelegate, NSText
         NSLayoutConstraint.activate([
             titleField.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 42),
             titleField.centerYAnchor.constraint(equalTo: header.centerYAnchor),
-            titleField.widthAnchor.constraint(lessThanOrEqualTo: header.widthAnchor, multiplier: 0.5),
+            titleField.widthAnchor.constraint(equalTo: header.widthAnchor, multiplier: 0.48),
+            titleField.heightAnchor.constraint(equalToConstant: 34),
             controls.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -18),
             controls.centerYAnchor.constraint(equalTo: header.centerYAnchor)
         ])
