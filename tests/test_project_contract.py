@@ -65,6 +65,18 @@ class FeuilleContractTests(unittest.TestCase):
         self.assertIn("homeView.display(noteStore.all())", autosave)
         self.assertIn("saveCurrentNote()", source[source.index("func textDidChange"):source.index("func updateFocus")])
 
+    def test_notes_home_has_new_card_dark_mode_and_ordered_card_content(self):
+        source = SOURCE.read_text()
+        self.assertIn("NoteCardView", source)
+        self.assertIn("titleLabel.font = NSFontManager.shared.convert", source)
+        self.assertIn("previewLabel", source)
+        self.assertIn("newNoteCard", source)
+        self.assertIn("applyTheme", source)
+        self.assertIn("toggleDarkMode", source)
+        self.assertIn("homeButton.title = \"⌂\"", source)
+        self.assertIn("undoWriting", source)
+        self.assertIn("redoWriting", source)
+
     def test_notes_home_and_local_note_store_exist(self):
         source = SOURCE.read_text()
         store = STORE.read_text()

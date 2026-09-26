@@ -13,82 +13,115 @@ private final class HeaderView: NSView {
     override func mouseMoved(with event: NSEvent) { onMouseActivity?() }
 }
 
-private final class NotesHomeView: NSView {
-    var onNew: (() -> Void)?
-    var onOpen: ((NoteSummary) -> Void)?
-    private var notes: [NoteSummary] = []
-    private let heading = NSTextField(labelWithString: "Feuille")
-    private let subtitle = NSTextField(labelWithString: "Tes notes")
-    private let newButton = NSButton(title: "+", target: nil, action: nil)
-    private var cards: [NSButton] = []
-    private let paper: NSColor
+private final class NoteCardView: NSView {
+    let previewLabel = NSTextField(labelWithString: "")
+    let titleLabel = NSTextField(labelWithString: "")
+    var onClick: (() -> Void)?
+    private var ink: NSColor
+    private var secondary: NSColor
+    private var cardColor: NSColor
 
-    init(paper: NSColor) {
-        self.paper = paper
+    init(title: String, preview: String, ink: NSColor, secondary: NSColor, cardColor: NSColor) {
+        self.ink = ink
+        self.secondary = secondary
+        self.cardColor = cardColor
         super.init(frame: .zero)
         wantsLayer = true
-        layer?.backgroundColor = paper.cgColor
-        heading.font = NSFont(name: "Courier", size: 31) ?? NSFont.systemFont(ofSize: 31)
-        heading.textColor = NSColor(calibratedWhite: 0.12, alpha: 1)
-        subtitle.font = NSFont(name: "Courier", size: 13) ?? NSFont.systemFont(ofSize: 13)
-        subtitle.textColor = NSColor(calibratedWhite: 0.45, alpha: 1)
-        newButton.bezelStyle = .roundRect
-        newButton.font = NSFont.systemFont(ofSize: 20, weight: .light)
-        newButton.target = self
-        newButton.action = #selector(createNote)
-        addSubview(heading)
-        addSubview(subtitle)
-        addSubview(newButton)
+        layer?.cornerRadius = 8
+        previewLabel.stringValue = preview
+        previewLabel.font = NSFont(name: "Courier", size: 12) ?? NSFont.systemFont(ofSize: 12)
+        previewLabel.maximumNumberOfLines = 5
+        previewLabel.lineBreakMode = .byTruncatingTail
+        titleLabel.stringValue = title
+        titleLabel.font = NSFontManager.shared.convert(NSFont(name: "Courier", size: 15) ?? NSFont.systemFont(ofSize: 15), toHaveTrait: .boldFontMask)
+        titleLabel.lineBreakMode = .byTruncatingTail
+        addSubview(previewLabel)
+        addSubview(titleLabel)
+        addGestureRecognizer(NSClickGestureRecognizer(target: self, action: #selector(open)))
+        applyTheme(ink: ink, secondary: secondary, cardColor: cardColor)
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+    override func layout() {
+        super.layout()
+        previewLabel.frame = NSRect(x: 16, y: bounds.height - 96, width: bounds.width - 32, height: 76)
+        titleLabel.frame = NSRect(x: 16, y: 16, width: bounds.width - 32, height: 24)
+    }
+    func applyTheme(ink: NSColor, secondary: NSColor, cardColor: NSColor) {
+        self.ink = ink; self.secondary = secondary; self.cardColor = cardColor
+        layer?.backgroundColor = cardColor.cgColor
+        previewLabel.textColor = secondary
+        titleLabel.textColor = ink
+    }
+    @objc private func open() { onClick?() }
+}
 
+private final class NotesHomeView: NSView {
+    var onNew: (() -> Void)?
+    var onOpen: ((NoteSummary) -> Void)?
+    var onToggleTheme: (() -> Void)?
+    private var notes: [NoteSummary] = []
+    private let heading = NSTextField(labelWithString: "Feuille")
+    private let subtitle = NSTextField(labelWithString: "Mes notes")
+    private let themeButton = NSButton(title: "◐", target: nil, action: nil)
+    private var cards: [NoteCardView] = []
+    private let newNoteCard: NoteCardView
+    private var paper: NSColor
+    private var ink: NSColor
+    private var secondary: NSColor
+    private var cardColor: NSColor
+
+    init(paper: NSColor, ink: NSColor, secondary: NSColor, cardColor: NSColor) {
+        self.paper = paper; self.ink = ink; self.secondary = secondary; self.cardColor = cardColor
+        newNoteCard = NoteCardView(title: "Nouvelle note", preview: "+", ink: ink, secondary: secondary, cardColor: cardColor)
+        super.init(frame: .zero)
+        wantsLayer = true
+        heading.font = NSFont(name: "Courier", size: 31) ?? NSFont.systemFont(ofSize: 31)
+        subtitle.font = NSFont(name: "Courier", size: 13) ?? NSFont.systemFont(ofSize: 13)
+        themeButton.bezelStyle = .roundRect
+        themeButton.target = self
+        themeButton.action = #selector(toggleTheme)
+        newNoteCard.onClick = { [weak self] in self?.onNew?() }
+        addSubview(heading); addSubview(subtitle); addSubview(themeButton); addSubview(newNoteCard)
+        applyTheme(paper: paper, ink: ink, secondary: secondary, cardColor: cardColor)
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
     func display(_ notes: [NoteSummary]) {
         self.notes = notes
         cards.forEach { $0.removeFromSuperview() }
         cards = notes.enumerated().map { index, note in
-            let card = NSButton(title: cardTitle(note), target: self, action: #selector(openNote(_:)))
-            card.tag = index
-            card.isBordered = false
-            card.alignment = .left
-            card.font = NSFont(name: "Courier", size: 13) ?? NSFont.systemFont(ofSize: 13)
-            card.cell?.wraps = true
-            card.cell?.lineBreakMode = .byTruncatingTail
-            card.wantsLayer = true
-            card.layer?.backgroundColor = NSColor(calibratedWhite: 0.93, alpha: 1).cgColor
-            card.layer?.cornerRadius = 4
+            let card = NoteCardView(title: note.title, preview: note.preview.isEmpty ? "Note vide" : note.preview, ink: ink, secondary: secondary, cardColor: cardColor)
+            card.onClick = { [weak self] in self?.onOpen?(note) }
             addSubview(card)
             return card
         }
         needsLayout = true
     }
-
+    func applyTheme(paper: NSColor, ink: NSColor, secondary: NSColor, cardColor: NSColor) {
+        self.paper = paper; self.ink = ink; self.secondary = secondary; self.cardColor = cardColor
+        layer?.backgroundColor = paper.cgColor
+        heading.textColor = ink; subtitle.textColor = secondary
+        newNoteCard.applyTheme(ink: ink, secondary: secondary, cardColor: cardColor)
+        cards.forEach { $0.applyTheme(ink: ink, secondary: secondary, cardColor: cardColor) }
+    }
     override func layout() {
         super.layout()
-        heading.frame = NSRect(x: 58, y: bounds.height - 92, width: 250, height: 40)
+        heading.frame = NSRect(x: 58, y: bounds.height - 92, width: 300, height: 40)
         subtitle.frame = NSRect(x: 60, y: bounds.height - 116, width: 250, height: 20)
-        newButton.frame = NSRect(x: bounds.width - 94, y: bounds.height - 100, width: 38, height: 34)
-        let columns = max(1, Int((bounds.width - 112) / 190))
-        let cardSize = CGSize(width: 166, height: 144)
+        themeButton.frame = NSRect(x: bounds.width - 94, y: bounds.height - 100, width: 38, height: 34)
+        let originY = bounds.height - 174 - 184
+        newNoteCard.frame = NSRect(x: 58, y: max(28, originY), width: 240, height: 184)
+        let columns = max(1, Int((bounds.width - 328) / 208))
         for (index, card) in cards.enumerated() {
             let column = index % columns
             let row = index / columns
-            let x = 58 + CGFloat(column) * 184
-            let y = bounds.height - 174 - CGFloat(row) * 164 - cardSize.height
-            card.frame = NSRect(origin: CGPoint(x: x, y: max(28, y)), size: cardSize)
+            let x = 328 + CGFloat(column) * 208
+            let y = originY - CGFloat(row) * 204
+            card.frame = NSRect(x: x, y: max(28, y), width: 190, height: 184)
         }
     }
-
-    private func cardTitle(_ note: NoteSummary) -> String {
-        let preview = note.preview.isEmpty ? "Note vide" : note.preview
-        return note.title + "\n\n" + preview
-    }
-
-    @objc private func createNote() { onNew?() }
-    @objc private func openNote(_ sender: NSButton) {
-        guard notes.indices.contains(sender.tag) else { return }
-        onOpen?(notes[sender.tag])
-    }
+    @objc private func toggleTheme() { onToggleTheme?() }
 }
 
 final class EditorViewController: NSWindowController, NSTextViewDelegate, NSTextFieldDelegate {
@@ -98,6 +131,7 @@ final class EditorViewController: NSWindowController, NSTextViewDelegate, NSText
     private let header = HeaderView()
     private let controls = NSStackView()
     private let homeButton = NSButton(title: "Notes", target: nil, action: nil)
+    private let themeButton = NSButton(title: "◐", target: nil, action: nil)
     private let sizeLabel = NSTextField(labelWithString: "18")
     private let noteStore = NoteStore()
     private var mouseMonitor: Any?
@@ -107,9 +141,11 @@ final class EditorViewController: NSWindowController, NSTextViewDelegate, NSText
     private var focusParagraph = 0
 
     private let baseFontSize: CGFloat = 18
-    private let paper = NSColor(calibratedWhite: 0.965, alpha: 1)
-    private let ink = NSColor(calibratedWhite: 0.12, alpha: 1)
-    private let ghostInk = NSColor(calibratedWhite: 0.46, alpha: 1)
+    private var isDarkMode = false
+    private var paper = NSColor(calibratedWhite: 0.965, alpha: 1)
+    private var ink = NSColor(calibratedWhite: 0.12, alpha: 1)
+    private var ghostInk = NSColor(calibratedWhite: 0.46, alpha: 1)
+    private var cardPaper = NSColor(calibratedWhite: 0.93, alpha: 1)
 
     init() {
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 920, height: 700), styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
@@ -168,11 +204,12 @@ final class EditorViewController: NSWindowController, NSTextViewDelegate, NSText
         content.addSubview(header)
         configureHeader()
 
-        homeView = NotesHomeView(paper: paper)
+        homeView = NotesHomeView(paper: paper, ink: ink, secondary: ghostInk, cardColor: cardPaper)
         homeView.frame = content.bounds
         homeView.autoresizingMask = [.width, .height]
         homeView.onNew = { [weak self] in self?.newDocument(nil) }
         homeView.onOpen = { [weak self] note in self?.open(note) }
+        homeView.onToggleTheme = { [weak self] in self?.toggleDarkMode(nil) }
         content.addSubview(homeView)
 
         NSLayoutConstraint.activate([
@@ -202,6 +239,8 @@ final class EditorViewController: NSWindowController, NSTextViewDelegate, NSText
         controls.spacing = 6
         controls.translatesAutoresizingMaskIntoConstraints = false
         header.addSubview(controls)
+        controls.addArrangedSubview(button("‹", #selector(undoWriting(_:))))
+        controls.addArrangedSubview(button("›", #selector(redoWriting(_:))))
         controls.addArrangedSubview(button("B", #selector(toggleBold(_:)), bold: true))
         controls.addArrangedSubview(button("I", #selector(toggleItalic(_:)), italic: true))
         controls.addArrangedSubview(button("U", #selector(toggleUnderline(_:))))
@@ -211,7 +250,13 @@ final class EditorViewController: NSWindowController, NSTextViewDelegate, NSText
         sizeLabel.widthAnchor.constraint(equalToConstant: 24).isActive = true
         controls.addArrangedSubview(sizeLabel)
         controls.addArrangedSubview(button("+", #selector(increaseFontSize(_:))))
+        themeButton.bezelStyle = .roundRect
+        themeButton.target = self
+        themeButton.action = #selector(toggleDarkMode(_:))
+        controls.addArrangedSubview(themeButton)
         homeButton.bezelStyle = .roundRect
+        homeButton.title = "⌂"
+        homeButton.toolTip = "Mes notes"
         homeButton.font = NSFont.systemFont(ofSize: 11)
         homeButton.target = self
         homeButton.action = #selector(showHome(_:))
@@ -291,6 +336,43 @@ final class EditorViewController: NSWindowController, NSTextViewDelegate, NSText
         guard controls.isHidden != !visible else { return }
         controls.isHidden = !visible
     }
+    @objc func undoWriting(_ sender: Any?) {
+        editor.undoManager?.undo()
+        updateFocus()
+        saveCurrentNote()
+    }
+
+    @objc func redoWriting(_ sender: Any?) {
+        editor.undoManager?.redo()
+        updateFocus()
+        saveCurrentNote()
+    }
+
+    @objc func toggleDarkMode(_ sender: Any?) {
+        isDarkMode.toggle()
+        if isDarkMode {
+            paper = NSColor(calibratedWhite: 0.12, alpha: 1)
+            ink = NSColor(calibratedWhite: 0.94, alpha: 1)
+            ghostInk = NSColor(calibratedWhite: 0.60, alpha: 1)
+            cardPaper = NSColor(calibratedWhite: 0.19, alpha: 1)
+        } else {
+            paper = NSColor(calibratedWhite: 0.965, alpha: 1)
+            ink = NSColor(calibratedWhite: 0.12, alpha: 1)
+            ghostInk = NSColor(calibratedWhite: 0.46, alpha: 1)
+            cardPaper = NSColor(calibratedWhite: 0.93, alpha: 1)
+        }
+        guard let content = window?.contentView else { return }
+        content.layer?.backgroundColor = paper.cgColor
+        header.layer?.backgroundColor = paper.cgColor
+        editor.backgroundColor = paper
+        editor.insertionPointColor = ink
+        titleField.textColor = ink
+        editor.typingAttributes = defaultAttributes(size: (editor.typingAttributes[.font] as? NSFont)?.pointSize ?? baseFontSize)
+        homeView.applyTheme(paper: paper, ink: ink, secondary: ghostInk, cardColor: cardPaper)
+        themeButton.title = isDarkMode ? "☀" : "◐"
+        updateFocus()
+    }
+
     @objc func toggleBold(_ sender: Any?) { toggleFontTrait(.boldFontMask) }
     @objc func toggleItalic(_ sender: Any?) { toggleFontTrait(.italicFontMask) }
 
