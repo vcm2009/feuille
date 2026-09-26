@@ -192,7 +192,7 @@ final class EditorViewController: NSWindowController, NSTextViewDelegate, NSText
         editor.textContainer?.containerSize = NSSize(width: 0, height: CGFloat.greatestFiniteMagnitude)
         editor.textContainer?.widthTracksTextView = true
         editor.textContainer?.heightTracksTextView = false
-        editor.textContainerInset = NSSize(width: 112, height: 36)
+        editor.textContainerInset = NSSize(width: 112, height: 112)
         editor.backgroundColor = paper
         editor.insertionPointColor = ink
         editor.font = writingFont(size: baseFontSize)
@@ -202,9 +202,7 @@ final class EditorViewController: NSWindowController, NSTextViewDelegate, NSText
 
         header.translatesAutoresizingMaskIntoConstraints = false
         header.wantsLayer = true
-        header.layer?.backgroundColor = paper.withAlphaComponent(0.86).cgColor
-        header.layer?.borderWidth = 1
-        header.layer?.borderColor = ink.withAlphaComponent(0.16).cgColor
+        header.layer?.backgroundColor = paper.withAlphaComponent(0.62).cgColor
         header.onMouseActivity = { [weak self] in self?.setControlsVisible(true) }
         content.addSubview(header)
         configureHeader()
@@ -391,8 +389,7 @@ final class EditorViewController: NSWindowController, NSTextViewDelegate, NSText
         }
         guard let content = window?.contentView else { return }
         content.layer?.backgroundColor = paper.cgColor
-        header.layer?.backgroundColor = paper.withAlphaComponent(0.86).cgColor
-        header.layer?.borderColor = ink.withAlphaComponent(0.16).cgColor
+        header.layer?.backgroundColor = paper.withAlphaComponent(0.62).cgColor
         editor.backgroundColor = paper
         editor.insertionPointColor = ink
         titleField.textColor = ink

@@ -77,9 +77,9 @@ class FeuilleContractTests(unittest.TestCase):
         self.assertIn("undoWriting", source)
         self.assertIn("redoWriting", source)
         self.assertIn("isNew: true", source)
-        self.assertIn("scrollView.topAnchor.constraint(equalTo: content.topAnchor)", source)
-        self.assertIn("withAlphaComponent(0.86)", source)
-        self.assertIn("categorySeparator", source)
+        self.assertIn("editor.textContainerInset = NSSize(width: 112, height: 112)", source)
+        self.assertNotIn("header.layer?.borderWidth", source)
+        self.assertIn("withAlphaComponent(0.62)", source)
 
     def test_notes_home_and_local_note_store_exist(self):
         source = SOURCE.read_text()
@@ -96,7 +96,7 @@ class FeuilleContractTests(unittest.TestCase):
 
     def test_high_sierra_compatibility_uses_supported_appkit_apis(self):
         source = SOURCE.read_text()
-        self.assertIn("header.layer?.backgroundColor = paper.withAlphaComponent(0.86).cgColor", source)
+        self.assertIn("header.layer?.backgroundColor = paper.withAlphaComponent(0.62).cgColor", source)
         self.assertNotIn("NSVisualEffectView", source)
         self.assertNotIn("monospacedSystemFont", source)
         self.assertIn("func toggleFontTrait", source)
