@@ -20,16 +20,19 @@ private final class NoteCardView: NSView {
     private var ink: NSColor
     private var secondary: NSColor
     private var cardColor: NSColor
+    private let isNew: Bool
 
-    init(title: String, preview: String, ink: NSColor, secondary: NSColor, cardColor: NSColor) {
+    init(title: String, preview: String, ink: NSColor, secondary: NSColor, cardColor: NSColor, isNew: Bool = false) {
         self.ink = ink
         self.secondary = secondary
         self.cardColor = cardColor
+        self.isNew = isNew
         super.init(frame: .zero)
         wantsLayer = true
         layer?.cornerRadius = 8
         previewLabel.stringValue = preview
-        previewLabel.font = NSFont(name: "Courier", size: 12) ?? NSFont.systemFont(ofSize: 12)
+        previewLabel.font = NSFont(name: "Courier", size: isNew ? 84 : 12) ?? NSFont.systemFont(ofSize: isNew ? 84 : 12)
+        previewLabel.alignment = isNew ? .center : .left
         previewLabel.maximumNumberOfLines = 5
         previewLabel.lineBreakMode = .byTruncatingTail
         titleLabel.stringValue = title
@@ -44,7 +47,7 @@ private final class NoteCardView: NSView {
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
     override func layout() {
         super.layout()
-        previewLabel.frame = NSRect(x: 16, y: bounds.height - 96, width: bounds.width - 32, height: 76)
+        previewLabel.frame = isNew ? NSRect(x: 16, y: 44, width: bounds.width - 32, height: 112) : NSRect(x: 16, y: bounds.height - 96, width: bounds.width - 32, height: 76)
         titleLabel.frame = NSRect(x: 16, y: 16, width: bounds.width - 32, height: 24)
     }
     func applyTheme(ink: NSColor, secondary: NSColor, cardColor: NSColor) {
@@ -73,7 +76,7 @@ private final class NotesHomeView: NSView {
 
     init(paper: NSColor, ink: NSColor, secondary: NSColor, cardColor: NSColor) {
         self.paper = paper; self.ink = ink; self.secondary = secondary; self.cardColor = cardColor
-        newNoteCard = NoteCardView(title: "Nouvelle note", preview: "+", ink: ink, secondary: secondary, cardColor: cardColor)
+        newNoteCard = NoteCardView(title: "Nouvelle note", preview: "+", ink: ink, secondary: secondary, cardColor: cardColor, isNew: true)
         super.init(frame: .zero)
         wantsLayer = true
         heading.font = NSFont(name: "Courier", size: 31) ?? NSFont.systemFont(ofSize: 31)
@@ -199,7 +202,9 @@ final class EditorViewController: NSWindowController, NSTextViewDelegate, NSText
 
         header.translatesAutoresizingMaskIntoConstraints = false
         header.wantsLayer = true
-        header.layer?.backgroundColor = paper.cgColor
+        header.layer?.backgroundColor = paper.withAlphaComponent(0.86).cgColor
+        header.layer?.borderWidth = 1
+        header.layer?.borderColor = ink.withAlphaComponent(0.16).cgColor
         header.onMouseActivity = { [weak self] in self?.setControlsVisible(true) }
         content.addSubview(header)
         configureHeader()
@@ -213,7 +218,7 @@ final class EditorViewController: NSWindowController, NSTextViewDelegate, NSText
         content.addSubview(homeView)
 
         NSLayoutConstraint.activate([
-            scrollView.topAnchor.constraint(equalTo: header.bottomAnchor),
+            scrollView.topAnchor.constraint(equalTo: content.topAnchor),
             scrollView.leadingAnchor.constraint(equalTo: content.leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: content.trailingAnchor),
             scrollView.bottomAnchor.constraint(equalTo: content.bottomAnchor),
@@ -241,15 +246,18 @@ final class EditorViewController: NSWindowController, NSTextViewDelegate, NSText
         header.addSubview(controls)
         controls.addArrangedSubview(button("‹", #selector(undoWriting(_:))))
         controls.addArrangedSubview(button("›", #selector(redoWriting(_:))))
+        controls.addArrangedSubview(categorySeparator())
         controls.addArrangedSubview(button("B", #selector(toggleBold(_:)), bold: true))
         controls.addArrangedSubview(button("I", #selector(toggleItalic(_:)), italic: true))
         controls.addArrangedSubview(button("U", #selector(toggleUnderline(_:))))
+        controls.addArrangedSubview(categorySeparator())
         controls.addArrangedSubview(button("−", #selector(decreaseFontSize(_:))))
         sizeLabel.font = NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .regular)
         sizeLabel.alignment = .center
         sizeLabel.widthAnchor.constraint(equalToConstant: 24).isActive = true
         controls.addArrangedSubview(sizeLabel)
         controls.addArrangedSubview(button("+", #selector(increaseFontSize(_:))))
+        controls.addArrangedSubview(categorySeparator())
         themeButton.bezelStyle = .roundRect
         themeButton.target = self
         themeButton.action = #selector(toggleDarkMode(_:))
@@ -257,7 +265,7 @@ final class EditorViewController: NSWindowController, NSTextViewDelegate, NSText
         homeButton.bezelStyle = .roundRect
         homeButton.title = "⌂"
         homeButton.toolTip = "Mes notes"
-        homeButton.font = NSFont.systemFont(ofSize: 11)
+        homeButton.font = NSFont.systemFont(ofSize: 17)
         homeButton.target = self
         homeButton.action = #selector(showHome(_:))
         controls.addArrangedSubview(homeButton)
@@ -270,6 +278,7 @@ final class EditorViewController: NSWindowController, NSTextViewDelegate, NSText
             controls.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -18),
             controls.centerYAnchor.constraint(equalTo: header.centerYAnchor)
         ])
+        applyControlTheme()
     }
 
     private func button(_ title: String, _ action: Selector, bold: Bool = false, italic: Bool = false) -> NSButton {
@@ -278,6 +287,25 @@ final class EditorViewController: NSWindowController, NSTextViewDelegate, NSText
         result.font = NSFontManager.shared.convert(NSFont.systemFont(ofSize: 12), toHaveTrait: bold ? .boldFontMask : [])
         if italic { result.font = NSFontManager.shared.convert(result.font!, toHaveTrait: .italicFontMask) }
         return result
+    }
+
+    private func categorySeparator() -> NSBox {
+        let separator = NSBox()
+        separator.boxType = .separator
+        separator.widthAnchor.constraint(equalToConstant: 1).isActive = true
+        return separator
+    }
+
+    private func applyControlTheme() {
+        let buttons = controls.arrangedSubviews.compactMap { $0 as? NSButton }
+        for button in buttons {
+            let font = button.font ?? NSFont.systemFont(ofSize: 12)
+            button.isBordered = false
+            button.wantsLayer = true
+            button.layer?.cornerRadius = 4
+            button.layer?.backgroundColor = cardPaper.cgColor
+            button.attributedTitle = NSAttributedString(string: button.title, attributes: [.font: font, .foregroundColor: ink])
+        }
     }
 
     private func writingFont(size: CGFloat) -> NSFont { return NSFont(name: "Courier", size: size) ?? NSFont(name: "Menlo", size: size) ?? NSFont.systemFont(ofSize: size) }
@@ -351,10 +379,10 @@ final class EditorViewController: NSWindowController, NSTextViewDelegate, NSText
     @objc func toggleDarkMode(_ sender: Any?) {
         isDarkMode.toggle()
         if isDarkMode {
-            paper = NSColor(calibratedWhite: 0.12, alpha: 1)
+            paper = NSColor.black
             ink = NSColor(calibratedWhite: 0.94, alpha: 1)
             ghostInk = NSColor(calibratedWhite: 0.60, alpha: 1)
-            cardPaper = NSColor(calibratedWhite: 0.19, alpha: 1)
+            cardPaper = NSColor(calibratedWhite: 0.08, alpha: 1)
         } else {
             paper = NSColor(calibratedWhite: 0.965, alpha: 1)
             ink = NSColor(calibratedWhite: 0.12, alpha: 1)
@@ -363,13 +391,15 @@ final class EditorViewController: NSWindowController, NSTextViewDelegate, NSText
         }
         guard let content = window?.contentView else { return }
         content.layer?.backgroundColor = paper.cgColor
-        header.layer?.backgroundColor = paper.cgColor
+        header.layer?.backgroundColor = paper.withAlphaComponent(0.86).cgColor
+        header.layer?.borderColor = ink.withAlphaComponent(0.16).cgColor
         editor.backgroundColor = paper
         editor.insertionPointColor = ink
         titleField.textColor = ink
         editor.typingAttributes = defaultAttributes(size: (editor.typingAttributes[.font] as? NSFont)?.pointSize ?? baseFontSize)
         homeView.applyTheme(paper: paper, ink: ink, secondary: ghostInk, cardColor: cardPaper)
         themeButton.title = isDarkMode ? "☀" : "◐"
+        applyControlTheme()
         updateFocus()
     }
 
