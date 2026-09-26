@@ -6,6 +6,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "Feuille" / "EditorViewController.swift"
 APP = ROOT / "Feuille" / "AppDelegate.swift"
+MAIN = ROOT / "Feuille" / "main.swift"
 PROJECT = ROOT / "Feuille.xcodeproj" / "project.pbxproj"
 
 
@@ -44,6 +45,14 @@ class FeuilleContractTests(unittest.TestCase):
         self.assertIn("MACOSX_DEPLOYMENT_TARGET = 10.13", project)
         self.assertIn("SDKROOT = macosx", project)
         self.assertIn("SWIFT_VERSION = 4.0", project)
+
+    def test_main_installs_the_application_delegate_without_a_nib(self):
+        main = MAIN.read_text()
+        self.assertIn("NSApplication.shared", main)
+        self.assertIn("let appDelegate = AppDelegate()", main)
+        self.assertIn("app.delegate = appDelegate", main)
+        self.assertIn("app.run()", main)
+        self.assertIn("main.swift in Sources", PROJECT.read_text())
 
     def test_app_explicitly_centers_activates_and_presents_editor_window(self):
         app = APP.read_text()

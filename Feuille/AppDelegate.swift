@@ -1,6 +1,5 @@
 import Cocoa
 
-@NSApplicationMain
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var editor: EditorViewController?
 
