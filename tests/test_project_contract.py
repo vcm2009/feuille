@@ -33,6 +33,15 @@ class FeuilleContractTests(unittest.TestCase):
         self.assertIn("focusParagraph", source)
         self.assertIn(".foregroundColor", source)
 
+    def test_editor_keeps_text_below_header_and_keyboard_mode_minimal(self):
+        source = SOURCE.read_text()
+        self.assertIn("scrollView.topAnchor.constraint(equalTo: header.bottomAnchor)", source)
+        self.assertIn("titleField.alignment = .left", source)
+        self.assertIn("HeaderView", source)
+        self.assertIn("setControlsVisible(false)", source)
+        self.assertIn("func mouseMoved", source)
+        self.assertNotIn("focusButton", source)
+
     def test_notes_home_and_local_note_store_exist(self):
         source = SOURCE.read_text()
         store = STORE.read_text()

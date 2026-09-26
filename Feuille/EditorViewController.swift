@@ -1,5 +1,18 @@
 import Cocoa
 
+private final class HeaderView: NSView {
+    var onMouseActivity: (() -> Void)?
+
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        trackingAreas.forEach(removeTrackingArea)
+        addTrackingArea(NSTrackingArea(rect: bounds, options: [.activeAlways, .mouseEnteredAndExited, .mouseMoved, .inVisibleRect], owner: self, userInfo: nil))
+    }
+
+    override func mouseEntered(with event: NSEvent) { onMouseActivity?() }
+    override func mouseMoved(with event: NSEvent) { onMouseActivity?() }
+}
+
 private final class NotesHomeView: NSView {
     var onNew: (() -> Void)?
     var onOpen: ((NoteSummary) -> Void)?
@@ -82,16 +95,17 @@ final class EditorViewController: NSWindowController, NSTextViewDelegate, NSText
     private let titleField = NSTextField()
     private let editor = NSTextView()
     private let scrollView = NSScrollView()
-    private let header = NSView()
-    private let focusButton = NSButton(title: "Concentration", target: nil, action: nil)
+    private let header = HeaderView()
+    private let controls = NSStackView()
     private let homeButton = NSButton(title: "Notes", target: nil, action: nil)
     private let sizeLabel = NSTextField(labelWithString: "18")
     private let noteStore = NoteStore()
+    private var mouseMonitor: Any?
     private var homeView: NotesHomeView!
     private var currentNote: NoteSummary?
     private var currentURL: URL?
     private var focusParagraph = 0
-    private var focusMode = true
+
     private let baseFontSize: CGFloat = 18
     private let paper = NSColor(calibratedWhite: 0.965, alpha: 1)
     private let ink = NSColor(calibratedWhite: 0.12, alpha: 1)
@@ -105,10 +119,18 @@ final class EditorViewController: NSWindowController, NSTextViewDelegate, NSText
         window.isReleasedWhenClosed = false
         super.init(window: window)
         setupInterface()
+        mouseMonitor = NSEvent.addLocalMonitorForEvents(matching: .mouseMoved) { [weak self] event in
+            if self?.window?.isKeyWindow == true { self?.setControlsVisible(true) }
+            return event
+        }
         showHome()
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    deinit {
+        if let mouseMonitor = mouseMonitor { NSEvent.removeMonitor(mouseMonitor) }
+    }
 
     private func setupInterface() {
         guard let content = window?.contentView else { return }
@@ -127,7 +149,7 @@ final class EditorViewController: NSWindowController, NSTextViewDelegate, NSText
         editor.usesRuler = false
         editor.isHorizontallyResizable = false
         editor.textContainer?.widthTracksTextView = true
-        editor.textContainerInset = NSSize(width: 112, height: 82)
+        editor.textContainerInset = NSSize(width: 112, height: 36)
         editor.backgroundColor = paper
         editor.insertionPointColor = ink
         editor.font = writingFont(size: baseFontSize)
@@ -138,6 +160,7 @@ final class EditorViewController: NSWindowController, NSTextViewDelegate, NSText
         header.translatesAutoresizingMaskIntoConstraints = false
         header.wantsLayer = true
         header.layer?.backgroundColor = paper.cgColor
+        header.onMouseActivity = { [weak self] in self?.setControlsVisible(true) }
         content.addSubview(header)
         configureHeader()
 
@@ -149,7 +172,7 @@ final class EditorViewController: NSWindowController, NSTextViewDelegate, NSText
         content.addSubview(homeView)
 
         NSLayoutConstraint.activate([
-            scrollView.topAnchor.constraint(equalTo: content.topAnchor),
+            scrollView.topAnchor.constraint(equalTo: header.bottomAnchor),
             scrollView.leadingAnchor.constraint(equalTo: content.leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: content.trailingAnchor),
             scrollView.bottomAnchor.constraint(equalTo: content.bottomAnchor),
@@ -165,14 +188,13 @@ final class EditorViewController: NSWindowController, NSTextViewDelegate, NSText
         titleField.translatesAutoresizingMaskIntoConstraints = false
         titleField.delegate = self
         titleField.font = writingFont(size: 24)
-        titleField.alignment = .center
+        titleField.alignment = .left
         titleField.placeholderString = "Titre"
         titleField.isBordered = false
         titleField.drawsBackground = false
         titleField.focusRingType = .none
         header.addSubview(titleField)
 
-        let controls = NSStackView()
         controls.orientation = .horizontal
         controls.spacing = 6
         controls.translatesAutoresizingMaskIntoConstraints = false
@@ -186,11 +208,6 @@ final class EditorViewController: NSWindowController, NSTextViewDelegate, NSText
         sizeLabel.widthAnchor.constraint(equalToConstant: 24).isActive = true
         controls.addArrangedSubview(sizeLabel)
         controls.addArrangedSubview(button("+", #selector(increaseFontSize(_:))))
-        focusButton.bezelStyle = .roundRect
-        focusButton.font = NSFont.systemFont(ofSize: 11)
-        focusButton.target = self
-        focusButton.action = #selector(toggleFocus(_:))
-        controls.addArrangedSubview(focusButton)
         homeButton.bezelStyle = .roundRect
         homeButton.font = NSFont.systemFont(ofSize: 11)
         homeButton.target = self
@@ -198,9 +215,9 @@ final class EditorViewController: NSWindowController, NSTextViewDelegate, NSText
         controls.addArrangedSubview(homeButton)
 
         NSLayoutConstraint.activate([
-            titleField.centerXAnchor.constraint(equalTo: header.centerXAnchor),
+            titleField.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 42),
             titleField.centerYAnchor.constraint(equalTo: header.centerYAnchor),
-            titleField.widthAnchor.constraint(lessThanOrEqualTo: header.widthAnchor, multiplier: 0.42),
+            titleField.widthAnchor.constraint(lessThanOrEqualTo: header.widthAnchor, multiplier: 0.5),
             controls.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -18),
             controls.centerYAnchor.constraint(equalTo: header.centerYAnchor)
         ])
@@ -225,15 +242,16 @@ final class EditorViewController: NSWindowController, NSTextViewDelegate, NSText
 
     func textDidChange(_ notification: Notification) {
         guard notification.object as? NSTextView === editor else { return }
+        setControlsVisible(false)
         updateFocus()
         saveCurrentNote()
     }
 
-    func textViewDidChangeSelection(_ notification: Notification) { updateFocus() }
-    override func controlTextDidChange(_ obj: Notification) { saveCurrentNote() }
+    func textViewDidChangeSelection(_ notification: Notification) { setControlsVisible(false); updateFocus() }
+    override func controlTextDidChange(_ obj: Notification) { setControlsVisible(false); saveCurrentNote() }
 
     func updateFocus() {
-        guard focusMode, let storage = editor.textStorage else { return }
+        guard let storage = editor.textStorage else { return }
         let text = storage.string as NSString
         guard text.length > 0 else { return }
         let location = min(editor.selectedRange().location, max(0, text.length - 1))
@@ -263,13 +281,12 @@ final class EditorViewController: NSWindowController, NSTextViewDelegate, NSText
         return index
     }
 
-    @objc func toggleFocus(_ sender: Any?) {
-        focusMode.toggle()
-        focusButton.title = focusMode ? "Concentration" : "Tout voir"
-        if focusMode { updateFocus() } else { restoreInk() }
-    }
-
     private func restoreInk() { editor.textStorage?.addAttribute(.foregroundColor, value: ink, range: NSRange(location: 0, length: editor.string.utf16.count)) }
+
+    private func setControlsVisible(_ visible: Bool) {
+        guard controls.isHidden != !visible else { return }
+        controls.isHidden = !visible
+    }
     @objc func toggleBold(_ sender: Any?) { toggleFontTrait(.boldFontMask) }
     @objc func toggleItalic(_ sender: Any?) { toggleFontTrait(.italicFontMask) }
 
